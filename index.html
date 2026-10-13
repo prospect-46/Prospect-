@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#173d35">
+<title>Prospect — segments GPS</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root{--green:#173d35;--mint:#dcebe4;--paper:#f7f7f2;--ink:#17231f;--muted:#66746e;--line:#d8ded9}
+*{box-sizing:border-box}body{margin:0;font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--paper);color:var(--ink)}
+header{background:var(--green);color:white;padding:18px 16px 16px}header h1{margin:0;font-size:23px}header p{margin:4px 0 0;color:#d8e7e0;font-size:13px}
+main{max-width:900px;margin:auto;padding:14px;display:grid;gap:14px}.panel{background:white;border:1px solid var(--line);border-radius:16px;padding:15px;box-shadow:0 2px 8px #102a2010}
+h2{font-size:18px;margin:0 0 10px}h3{font-size:15px;margin:0 0 5px}.hint{color:var(--muted);font-size:13px}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.row>*{flex:1;min-width:130px}
+label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}input,select,textarea,button{font:inherit}input[type=text],select,textarea,input[type=file]{width:100%;border:1px solid var(--line);border-radius:10px;padding:11px;background:#fff;color:var(--ink)}input[type=range]{width:100%;accent-color:var(--green)}textarea{min-height:68px;resize:vertical}
+button{border:0;border-radius:10px;padding:11px 14px;background:var(--green);color:white;font-weight:650;cursor:pointer}button.secondary{background:var(--mint);color:var(--green)}button.danger{background:#f9e7e4;color:#8a2c20}button:disabled{opacity:.45;cursor:not-allowed}
+#map{height:300px;border-radius:12px;background:#e9eeeb;overflow:hidden}.stat{background:var(--mint);padding:9px 11px;border-radius:10px;font-size:13px}.stat strong{display:block;font-size:19px;color:var(--green);margin-top:3px}.stat .stat-label{display:block;color:var(--muted);font-size:13px}.range-controls{display:flex;align-items:center;gap:7px}.range-controls input[type=range]{flex:1;min-width:0}.nudge{flex:0 0 38px;min-width:38px;height:42px;padding:0;font-size:22px;line-height:1;background:var(--mint);color:var(--green)}.nudge:disabled{opacity:.35}
+.slider-stack{display:flex;flex-direction:column;gap:8px}.slider-stack>div{width:100%}.rating-comments{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:12px;align-items:start}.rating-editor{display:flex;gap:4px;align-items:stretch}.rating-editor input{width:100%;min-width:0;align-self:stretch;height:auto;border:1px solid var(--line);border-radius:10px;padding:8px 4px;text-align:center;font-weight:700;font-size:20px;appearance:textfield;-moz-appearance:textfield}.rating-editor input::-webkit-inner-spin-button,.rating-editor input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}.rating-arrows{display:flex;flex-direction:column;gap:4px;align-self:stretch}.rating-arrows button{min-width:35px;min-height:40px;flex:1;padding:6px 4px;line-height:1}.comments-col textarea{width:100%;min-height:84px}.page-nav{max-width:900px;margin:12px auto 0;padding:0 14px;display:flex;gap:8px}.page-nav button{flex:1;background:var(--mint);color:var(--green)}.page-nav button.active{background:var(--green);color:white}#pageViewport{width:100%;overflow:hidden;touch-action:pan-y}.atlas-page{display:none;max-width:900px;margin:auto;padding:14px}.atlas-page.active{display:block}#homePage.hidden-page{display:none}#atlasMap{height:65vh;min-height:360px;border-radius:12px;background:#e9eeeb}.legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:13px}.legend span{display:flex;gap:5px;align-items:center}.legend i{display:inline-block;width:15px;height:5px;border-radius:4px}
+.manual-toolbar{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}.manual-toolbar button{font-size:13px;padding:9px;flex:1;min-width:115px}.manual-toolbar button.active{background:var(--green);color:white}#manualInfo{margin:6px 0 2px}.session-segment{padding:10px 0;border-bottom:1px solid var(--line)}.session-segment strong{display:block}.session-segment span{font-size:13px;color:var(--muted)}
+.segment{border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:9px}.segment p{margin:4px 0;color:var(--muted);font-size:13px}.segment .row{margin-top:8px}.segment button{padding:8px 10px;font-size:13px}
+#notice{font-size:13px;color:var(--green);min-height:18px;margin-top:7px}.hidden{display:none!important}.footer{font-size:12px;color:var(--muted);text-align:center;padding:2px 10px 18px}
+@media(min-width:720px){main{grid-template-columns:1fr 1fr}.wide{grid-column:1/-1}#map{height:390px}}
+</style>
+</head>
+<body>
+<header><h1>Prospect</h1><p>Ta bibliothèque personnelle de segments GPS · prototype V1.7</p></header>
+<nav class="page-nav" aria-label="Écrans de Prospect"><button type="button" id="showHome" class="active">Parcours</button><button type="button" id="showAtlas">Bibliothèque →</button></nav>
+<div id="pageViewport"><main id="homePage">
+<section class="panel wide">
+<h2>1. Importer une activité GPS</h2>
+<p class="hint">Insérer votre fichier GPX</p>
+<input id="gpxFile" type="file" accept=".gpx,application/gpx+xml,application/xml,text/xml">
+<button id="loadGpx" type="button" style="margin-top:10px">charger</button>
+<div id="trackInfo" class="row" style="margin-top:10px"></div>
+<div id="notice" role="status"></div>
+</section>
+<section class="panel wide">
+<h2>2. Choisis ou crée ton segment</h2>
+<div id="map" aria-label="Carte de la trace GPS"></div>
+<p class="hint">Déplace les curseurs pour définir le début et la fin de la portion, ou place des points directement sur la carte pour créer un segment.</p>
+<div class="manual-toolbar"><button type="button" id="manualMode" class="secondary">Créer un segment avec des points</button><button type="button" id="undoManual" class="secondary" disabled>Annuler le dernier point</button><button type="button" id="clearManual" class="secondary" disabled>Effacer les points</button></div><p id="manualInfo" class="hint">Mode curseurs : sélection sur la trace GPX.</p>
+<div class="slider-stack">
+<div><label for="startRange">Début du segment</label><div class="range-controls"><button type="button" class="nudge" data-range="startRange" data-step="-1" aria-label="Reculer le début du segment" disabled>‹</button><input id="startRange" type="range" min="0" max="0" value="0" disabled><button type="button" class="nudge" data-range="startRange" data-step="1" aria-label="Avancer le début du segment" disabled>›</button></div></div>
+<div><label for="endRange">Fin du segment</label><div class="range-controls"><button type="button" class="nudge" data-range="endRange" data-step="-1" aria-label="Reculer la fin du segment" disabled>‹</button><input id="endRange" type="range" min="0" max="0" value="0" disabled><button type="button" class="nudge" data-range="endRange" data-step="1" aria-label="Avancer la fin du segment" disabled>›</button></div></div>
+</div>
+<div class="row" style="margin-top:8px">
+<div class="stat"><span class="stat-label">Distance</span><strong id="portionDistance">—</strong></div>
+<div class="stat"><span class="stat-label">Dénivelé positif</span><strong id="portionElevation">—</strong></div>
+</div>
+<div class="row">
+<div><label for="segName">Nom du segment</label><input id="segName" type="text" placeholder="Ex. Sentier le long du Lot"></div>
+<div><label for="segCategory">Catégorie</label><select id="segCategory"><option>Trail</option><option>Route</option><option>VTT</option><option>Moto</option><option>Randonnée</option><option>Autre</option></select></div>
+</div>
+<div class="rating-comments">
+<div class="rating-col"><label for="segRating">Note / 5</label><div class="rating-editor"><input id="segRating" type="number" inputmode="decimal" min="0" max="5" step="0.1" value="0" aria-label="Note sur 5"><div class="rating-arrows"><button type="button" id="ratingUp" aria-label="Augmenter la note">▲</button><button type="button" id="ratingDown" aria-label="Diminuer la note">▼</button></div></div></div>
+<div class="comments-col"><label for="segNote">Commentaires</label><textarea id="segNote" placeholder="Terrain, difficulté, point de départ…"></textarea></div>
+</div>
+<div class="row" style="margin-top:10px"><button id="saveSegment" disabled>Enregistrer ce segment</button><button id="resetTrack" class="secondary">Effacer la trace importée</button></div>
+</section>
+
+<section class="panel">
+<h2>3. Liste des segments sélectionnés</h2>
+<p class="hint">Segments créés à partir de la carte en cours. Charger un autre GPX vide cette liste, sans supprimer les segments enregistrés dans la bibliothèque.</p>
+<div id="composeList"><p class="hint">Aucun segment sélectionné sur cette carte.</p></div>
+<div id="composeInfo" class="hint" style="margin-top:8px"></div>
+</section>
+</main><section id="atlasPage" class="atlas-page" aria-label="Carte de tous les segments"><div class="panel"><h2>Bibliothèque</h2><p class="hint">Les montées sont rouges, les descentes bleues. Les portions sans altitude ou plates sont grises.</p><div id="atlasMap"></div><div id="atlasNotice" class="hint"></div><div class="legend"><span><i style="background:#d3443c"></i> Montée</span><span><i style="background:#3176d4"></i> Descente</span><span><i style="background:#929a99"></i> Plat / inconnu</span></div></div>
+<section class="panel">
+<h2>Mes segments</h2>
+<label for="filterCategory">Filtrer par catégorie</label>
+<select id="filterCategory"><option value="">Toutes les catégories</option><option>Trail</option><option>Route</option><option>VTT</option><option>Moto</option><option>Randonnée</option><option>Autre</option></select>
+<div id="library"><p class="hint">Aucun segment enregistré pour l’instant.</p></div>
+</section>
+</section></div>
+<div class="footer">Prototype local · les segments restent dans le stockage du navigateur sur cet appareil. Exporte régulièrement tes parcours GPX.</div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const hasLeaflet = typeof L !== 'undefined';
+let atlasMap=null,atlasLayer=null,activePage='home';
+let map;
+if (hasLeaflet) {
+ map=L.map('map').setView([44.45,1.44],10);
+ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
+} else {
+ // Offline fallback: the GPX trace remains visible even if the map library cannot load.
+ const holder=$('map');
+ holder.innerHTML='<svg id="fallbackMap" viewBox="0 0 600 300" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;background:#e7eee9"></svg>';
+ map={removeLayer:()=>{},fitBounds:()=>{},invalidateSize:()=>{}};
+}
+function drawOfflineMap(){
+ if(hasLeaflet)return;
+ const svg=$('fallbackMap');if(!svg)return;
+ if(!points.length){svg.innerHTML='<text x="300" y="150" text-anchor="middle" fill="#587067" font-size="16">Importe un fichier GPX pour voir la trace</text>';return;}
+ let minLat=Infinity,maxLat=-Infinity,minLon=Infinity,maxLon=-Infinity;for(const p of points){minLat=Math.min(minLat,p.lat);maxLat=Math.max(maxLat,p.lat);minLon=Math.min(minLon,p.lon);maxLon=Math.max(maxLon,p.lon);}
+ const latSpan=Math.max(maxLat-minLat,0.00001),lonSpan=Math.max(maxLon-minLon,0.00001);
+ const scale=Math.min(550/lonSpan,255/latSpan);
+ const ox=(600-lonSpan*scale)/2,oy=(300-latSpan*scale)/2;
+ const coord=p=>[(ox+(p.lon-minLon)*scale).toFixed(1),(300-oy-(p.lat-minLat)*scale).toFixed(1)].join(',');
+ const a=+$('startRange').value,b=+$('endRange').value,from=Math.min(a,b),to=Math.max(a,b);
+ const line=arr=>arr.map(coord).join(' ');
+ svg.innerHTML='<polyline points="'+line(points)+'" fill="none" stroke="#527b8d" stroke-width="3" stroke-linejoin="round"/><polyline points="'+line(points.slice(from,to+1))+'" fill="none" stroke="#16804a" stroke-width="5" stroke-linejoin="round"/><circle cx="'+coord(points[from]).split(',')[0]+'" cy="'+coord(points[from]).split(',')[1]+'" r="6" fill="#16804a"/><circle cx="'+coord(points[to]).split(',')[0]+'" cy="'+coord(points[to]).split(',')[1]+'" r="6" fill="#cf5a38"/>';
+}
+
+let points=[], trackLine=null, selectedLine=null, startMarker=null, endMarker=null, segments=[];
+let selectedIds = []; // Current GPX session only
+let sessionSegments=[];
+let manualMode=false, manualPoints=[], manualLayer=null,sessionLayer=null;
+try { segments = JSON.parse(localStorage.getItem('prospect_segments') || localStorage.getItem('tracemix_segments') || '[]'); } catch(e) { segments=[]; }
+const fmtKm = m => (m/1000).toFixed(2).replace('.',',')+' km';
+function hav(a,b){const R=6371000,rad=x=>x*Math.PI/180;let d1=rad(b.lat-a.lat),d2=rad(b.lon-a.lon),x=Math.sin(d1/2)**2+Math.cos(rad(a.lat))*Math.cos(rad(b.lat))*Math.sin(d2/2)**2;return 2*R*Math.asin(Math.sqrt(x));}
+function distance(arr){let d=0;for(let i=1;i<arr.length;i++)d+=hav(arr[i-1],arr[i]);return d;}
+function elevationGain(arr){
+ let gain=0, pairs=0;
+ for(let i=1;i<arr.length;i++){
+  const prev=arr[i-1].ele, curr=arr[i].ele;
+  if(prev===null||curr===null||!Number.isFinite(prev)||!Number.isFinite(curr))continue;
+  pairs++;gain+=Math.max(0,curr-prev);
+ }
+ return pairs?Math.round(gain).toLocaleString('fr-FR')+' m':'Non disponible';
+}
+function updateNudges(){
+ document.querySelectorAll('.nudge').forEach(btn=>{
+  const input=$(btn.dataset.range),step=Number(btn.dataset.step);
+  btn.disabled=input.disabled||Number(input.value)+step<Number(input.min)||Number(input.value)+step>Number(input.max);
+ });
+}
+function notice(s){$('notice').textContent=s;}
+function normalizeRating(){
+ const field=$('segRating');let n=Number(String(field.value).replace(',','.'));
+ if(!Number.isFinite(n))n=0;
+ n=Math.round(Math.max(0,Math.min(5,n))*10)/10;
+ field.value=n.toFixed(1);return n;
+}
+$('segRating').addEventListener('change',normalizeRating);
+$('ratingUp').addEventListener('click',()=>{$('segRating').value=(normalizeRating()+0.1).toFixed(1);normalizeRating();});
+$('ratingDown').addEventListener('click',()=>{$('segRating').value=(normalizeRating()-0.1).toFixed(1);normalizeRating();});
+function showPage(page){
+ activePage=page;
+ $('homePage').classList.toggle('hidden-page',page==='atlas');
+ $('atlasPage').classList.toggle('active',page==='atlas');
+ $('showHome').classList.toggle('active',page==='home');
+ $('showAtlas').classList.toggle('active',page==='atlas');
+ if(page==='atlas')setTimeout(drawAtlas,60);
+ else if(hasLeaflet)setTimeout(()=>map.invalidateSize(),60);
+}
+$('showHome').addEventListener('click',()=>showPage('home'));
+$('showAtlas').addEventListener('click',()=>showPage('atlas'));
+let touchX=null,touchY=null;
+$('pageViewport').addEventListener('touchstart',e=>{if(e.touches.length===1){touchX=e.touches[0].clientX;touchY=e.touches[0].clientY;}},{passive:true});
+$('pageViewport').addEventListener('touchend',e=>{
+ if(touchX===null||!e.changedTouches.length)return;
+ const dx=e.changedTouches[0].clientX-touchX,dy=e.changedTouches[0].clientY-touchY;
+ touchX=null;touchY=null;
+ const target=e.target;
+ if(target.closest('#map,#atlasMap,input,textarea,select,button'))return;
+ if(Math.abs(dx)>85&&Math.abs(dx)>Math.abs(dy)*1.6)showPage(dx<0?'atlas':'home');
+},{passive:true});
+function drawAtlas(){
+ if(!hasLeaflet){$('atlasNotice').textContent='La carte nécessite une connexion Internet pour charger le fond cartographique.';return;}
+ if(!atlasMap){
+  atlasMap=L.map('atlasMap').setView([44.45,1.44],10);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(atlasMap);
+ }
+ atlasMap.invalidateSize();
+ if(atlasLayer)atlasMap.removeLayer(atlasLayer);
+ atlasLayer=L.featureGroup().addTo(atlasMap);
+ let count=0;
+ for(const seg of segments){
+  const pts=seg.points||[];if(pts.length<2)continue;
+  count++;
+  for(let i=1;i<pts.length;i++){
+   const a=pts[i-1],b=pts[i];
+   const valid=a.ele!==null&&b.ele!==null&&Number.isFinite(Number(a.ele))&&Number.isFinite(Number(b.ele));
+   const diff=valid?Number(b.ele)-Number(a.ele):0;
+   const color=!valid||Math.abs(diff)<0.01?'#929a99':diff>0?'#d3443c':'#3176d4';
+   L.polyline([[a.lat,a.lon],[b.lat,b.lon]],{color,weight:5,opacity:0.9}).bindPopup('<strong>'+esc(seg.name)+'</strong><br>'+esc(seg.category)+' · '+fmtKm(seg.meters)+'<br>Note : '+(seg.rating===undefined?'—':Number(seg.rating).toFixed(1)+'/5')).addTo(atlasLayer);
+  }
+ }
+ $('atlasNotice').textContent=count?count+' segment(s) affiché(s)':'Aucun segment enregistré pour le moment.';
+ if(atlasLayer.getLayers().length)atlasMap.fitBounds(atlasLayer.getBounds(),{padding:[25,25]});
+}
+function redrawSessionOnMap(){
+ if(!hasLeaflet)return;
+ if(sessionLayer)map.removeLayer(sessionLayer);
+ sessionLayer=L.layerGroup().addTo(map);
+ for(const seg of sessionSegments){
+  if(seg.points.length>1)L.polyline(seg.points.map(p=>[p.lat,p.lon]),{color:'#d18419',weight:5,opacity:.8}).bindPopup(esc(seg.name)).addTo(sessionLayer);
+ }
+}
+function redrawManual(){
+ if(hasLeaflet){
+  if(manualLayer)map.removeLayer(manualLayer);
+  manualLayer=L.layerGroup().addTo(map);
+  if(manualPoints.length>1)L.polyline(manualPoints.map(p=>[p.lat,p.lon]),{color:'#8a3bc1',weight:5,dashArray:'7 6'}).addTo(manualLayer);
+  manualPoints.forEach(p=>L.circleMarker([p.lat,p.lon],{radius:6,color:'#fff',weight:2,fillColor:'#8a3bc1',fillOpacity:1}).addTo(manualLayer));
+ }
+ $('undoManual').disabled=!manualMode||!manualPoints.length;
+ $('clearManual').disabled=!manualMode||!manualPoints.length;
+ $('manualInfo').textContent=manualMode?'Mode points : touche la carte pour placer les sommets ('+manualPoints.length+' point(s)). Deux points minimum.':'Mode curseurs : sélection sur la trace GPX.';
+ updateSelectionStats();
+}
+function updateSelectionStats(){
+ const slice=manualMode?manualPoints:currentSlice();
+ $('portionDistance').textContent=slice.length>1?fmtKm(distance(slice)):'—';
+ $('portionElevation').textContent=manualMode?'Non disponible':elevationGain(slice);
+ $('saveSegment').disabled=slice.length<2;
+}
+function resetManual(){manualPoints=[];redrawManual();}
+function setManualMode(enabled){
+ if(enabled&&!hasLeaflet){notice('Le mode points nécessite la carte interactive en ligne.');return;}
+ manualMode=enabled;
+ $('manualMode').classList.toggle('active',manualMode);
+ $('manualMode').textContent=manualMode?'Revenir aux curseurs':'Créer un segment avec des points';
+ document.querySelector('.slider-stack').style.opacity=manualMode?'.45':'1';
+ $('map').style.cursor=manualMode?'crosshair':'';
+ redrawManual();if(!manualMode)drawSelection();
+}
+$('manualMode').addEventListener('click',()=>setManualMode(!manualMode));
+$('undoManual').addEventListener('click',()=>{manualPoints.pop();redrawManual();});
+$('clearManual').addEventListener('click',resetManual);
+if(hasLeaflet)map.on('click',e=>{if(!manualMode)return;manualPoints.push({lat:e.latlng.lat,lon:e.latlng.lng,ele:null,time:null});redrawManual();});
+function clearLayers(){[trackLine,selectedLine,startMarker,endMarker].forEach(x=>{if(x)map.removeLayer(x)});trackLine=selectedLine=startMarker=endMarker=null;}
+function currentSlice(){if(!points.length)return [];let a=+$('startRange').value,b=+$('endRange').value;if(a>b)[a,b]=[b,a];return points.slice(a,b+1);}
+function drawSelection(){
+ if(!points.length)return;
+ let a=+$('startRange').value,b=+$('endRange').value;if(a>b){const t=a;a=b;b=t}
+ const slice=points.slice(a,b+1);
+ if(!hasLeaflet){drawOfflineMap();}else{
+ if(selectedLine)map.removeLayer(selectedLine);if(startMarker)map.removeLayer(startMarker);if(endMarker)map.removeLayer(endMarker);
+ selectedLine=L.polyline(slice.map(p=>[p.lat,p.lon]),{color:'#16804a',weight:6,opacity:.95}).addTo(map);
+ startMarker=L.circleMarker([points[a].lat,points[a].lon],{radius:7,color:'#fff',weight:2,fillColor:'#16804a',fillOpacity:1}).addTo(map);
+ endMarker=L.circleMarker([points[b].lat,points[b].lon],{radius:7,color:'#fff',weight:2,fillColor:'#cf5a38',fillOpacity:1}).addTo(map);
+ }
+ if(!manualMode)updateSelectionStats();updateNudges();
+}
+async function loadSelectedGpx(){
+ const file=$('gpxFile').files[0];if(!file){notice('Sélectionne d’abord un fichier GPX.');return;}
+ notice('Chargement du fichier en cours…');
+ try{
+  const text=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(new Error('Lecture du fichier impossible'));reader.readAsText(file);}); const xml=new DOMParser().parseFromString(text,'application/xml');
+  if(xml.querySelector('parsererror'))throw new Error('Le fichier GPX semble invalide.');
+  const els=[...xml.getElementsByTagNameNS('*','trkpt')];
+  const raw=els.length?els:[...xml.getElementsByTagNameNS('*','rtept')];
+  points=raw.map(el=>({lat:+el.getAttribute('lat'),lon:+el.getAttribute('lon'),ele:(()=>{const value=el.getElementsByTagNameNS('*','ele')[0]?.textContent;return value===undefined||value===null||value.trim()===''?null:(Number.isFinite(Number(value))?Number(value):null);})(),time:el.getElementsByTagNameNS('*','time')[0]?.textContent||null})).filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lon));
+  if(points.length<2)throw new Error('Aucun tracé GPS exploitable trouvé dans ce fichier.');
+  sessionSegments=[];selectedIds=[];renderSession();resetManual();setManualMode(false);if(hasLeaflet&&sessionLayer){map.removeLayer(sessionLayer);sessionLayer=null;}clearLayers();if(hasLeaflet){trackLine=L.polyline(points.map(p=>[p.lat,p.lon]),{color:'#527b8d',weight:4}).addTo(map);map.fitBounds(trackLine.getBounds(),{padding:[20,20]});}
+  $('startRange').disabled=$('endRange').disabled=false;
+  for(const id of ['startRange','endRange']){$(id).min=0;$(id).max=points.length-1;}
+  $('startRange').value=0;$('endRange').value=points.length-1;
+  $('trackInfo').innerHTML=`<div class="stat"><span class="stat-label">Distance</span><strong>${fmtKm(distance(points))}</strong></div><div class="stat"><span class="stat-label">Dénivelé positif</span><strong>${elevationGain(points)}</strong></div>`;
+  $('segName').value=file.name.replace(/\.gpx$/i,'');drawSelection();notice('Trace importée : '+file.name);
+ }catch(err){notice('Erreur : '+(err.message||'Impossible de lire ce fichier.'));}
+}
+$('startRange').addEventListener('input',drawSelection);$('endRange').addEventListener('input',drawSelection);
+document.querySelectorAll('.nudge').forEach(btn=>btn.addEventListener('click',()=>{
+ const input=$(btn.dataset.range);
+ if(input.disabled)return;
+ const next=Math.max(Number(input.min),Math.min(Number(input.max),Number(input.value)+Number(btn.dataset.step)));
+ input.value=String(next);drawSelection();
+}));
+$('saveSegment').addEventListener('click',()=>{
+ const slice=manualMode?manualPoints.slice():currentSlice();if(slice.length<2)return;
+ const seg={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),name:$('segName').value.trim()||'Segment sans nom',category:$('segCategory').value,note:$('segNote').value.trim(),rating:normalizeRating(),points:slice,meters:distance(slice),created:new Date().toISOString()};
+ segments.push(seg);sessionSegments.push(seg);persist();render();renderSession();redrawSessionOnMap();if(activePage==='atlas')drawAtlas();notice('Segment enregistré dans ta bibliothèque et ajouté à la liste de cette carte.');if(manualMode)resetManual();
+});
+$('resetTrack').addEventListener('click',()=>{points=[];sessionSegments=[];selectedIds=[];renderSession();resetManual();setManualMode(false);if(hasLeaflet&&sessionLayer){map.removeLayer(sessionLayer);sessionLayer=null;}clearLayers();drawOfflineMap();$('gpxFile').value='';$('trackInfo').innerHTML='';$('startRange').disabled=$('endRange').disabled=true;$('saveSegment').disabled=true;$('portionDistance').textContent='—';$('portionElevation').textContent='—';updateNudges();notice('Trace importée effacée. Les segments enregistrés sont conservés.');});
+function persist(){try{localStorage.setItem('prospect_segments',JSON.stringify(segments));}catch(e){notice('Stockage saturé : exporte tes parcours et supprime des segments.');}}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function render(){
+ const filter=$('filterCategory').value, visible=segments.filter(s=>!filter||s.category===filter);
+ $('library').innerHTML=visible.length?visible.map(s=>`<article class="segment"><h3>${esc(s.name)}</h3><p>${esc(s.category)} · ${fmtKm(s.meters)}</p>${s.rating!==undefined?`<p>Note : ${Number(s.rating).toFixed(1)}/5</p>`:''}${s.note?`<p>${esc(s.note)}</p>`:''}<div class="row"><button class="secondary" data-add="${s.id}">Afficher sur la carte en cours</button><button class="danger" data-delete="${s.id}">Supprimer</button></div></article>`).join(''):'<p class="hint">Aucun segment dans cette catégorie.</p>';
+ document.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>{const seg=segments.find(x=>x.id===b.dataset.add);if(seg&&!sessionSegments.some(x=>x.id===seg.id)){sessionSegments.push(seg);renderSession();redrawSessionOnMap();}showPage('home');});
+ document.querySelectorAll('[data-delete]').forEach(b=>b.onclick=()=>{segments=segments.filter(s=>s.id!==b.dataset.delete);sessionSegments=sessionSegments.filter(x=>x.id!==b.dataset.delete);persist();render();renderSession();redrawSessionOnMap();if(activePage==='atlas')drawAtlas();});
+ renderSession();
+}
+function renderSession(){
+ $('composeList').innerHTML=sessionSegments.length?sessionSegments.map((seg,i)=>`<div class="session-segment"><strong>${i+1}. ${esc(seg.name)}</strong><span>${esc(seg.category)} · ${fmtKm(seg.meters)} · Note ${Number(seg.rating||0).toFixed(1)}/5</span></div>`).join(''):'<p class="hint">Aucun segment sélectionné sur cette carte.</p>';
+ $('composeInfo').textContent=sessionSegments.length?`${sessionSegments.length} segment(s) sur la carte en cours. Ils restent enregistrés dans la bibliothèque.`:'';
+}
+$('filterCategory').addEventListener('change',render);
+$('loadGpx').addEventListener('click',()=>{notice('Bouton charger activé.');loadSelectedGpx();});
+$('gpxFile').addEventListener('change',()=>notice($('gpxFile').files.length?'Fichier sélectionné : '+$('gpxFile').files[0].name+'. Appuie sur charger.':''));
+render();renderSession();drawOfflineMap();updateNudges();setTimeout(()=>map.invalidateSize(),200);
+})();
+</script>
+</body></html>
